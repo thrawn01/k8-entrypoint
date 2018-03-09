@@ -57,7 +57,7 @@ func main() {
 		}
 		// Set environment vars for this dependency
 		os.Setenv(fmt.Sprintf("%s_HOSTS", strings.ToUpper(dep.Name)), strings.Join(dep.Hosts, ","))
-		os.Setenv(fmt.Sprintf("%s_PORT", dep.Name), dep.Port)
+		os.Setenv(fmt.Sprintf("%s_PORT", strings.ToUpper(dep.Name)), dep.Port)
 	}
 
 	// Execute our entry-point
