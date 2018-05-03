@@ -89,7 +89,7 @@ func getDeps() []Dependency {
 // Wait for the ip or hostname to show up in the endpoints api.
 func waitFor(client *kubernetes.Clientset, namespace string, dep *Dependency) error {
 	for {
-		fmt.Printf("Waiting for endpoint '%s' in '%s' and port name '%s'", dep.Name, namespace, dep.PortName)
+		fmt.Printf("Waiting for endpoint '%s' in '%s' and port name '%s'\n", dep.Name, namespace, dep.PortName)
 		endpoint, err := client.CoreV1().Endpoints(namespace).Get(dep.Name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(os.Stderr, "endpoint for '%s' in namespace '%s' not found\n", dep.Name, namespace)
