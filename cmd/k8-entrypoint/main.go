@@ -26,7 +26,7 @@ func main() {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "during InClusterConfig() - %s", err)
+		fmt.Fprintf(os.Stderr, "during InClusterConfig() - %s\n", err)
 		os.Exit(1)
 	}
 	// creates the client
@@ -69,7 +69,7 @@ func getDeps() []Dependency {
 
 	depends := os.Getenv("DEPENDS_ON")
 	if len(depends) == 0 {
-		fmt.Fprintln(os.Stderr, "'DEPENDS_ON' not set or empty")
+		fmt.Println("'DEPENDS_ON' not set or empty")
 		os.Exit(1)
 	}
 
@@ -89,23 +89,23 @@ func getDeps() []Dependency {
 // Wait for the ip or hostname to show up in the endpoints api.
 func waitFor(client *kubernetes.Clientset, namespace string, dep *Dependency) error {
 	for {
-		fmt.Printf("Waiting for endpoint '%s' in '%s' and port name '%s'\n", dep.Name, namespace, dep.PortName)
+		fmt.Printf("Looking for endpoint '%s' in namespace '%s' and port name '%s'", dep.Name, namespace, dep.PortName)
 		endpoint, err := client.CoreV1().Endpoints(namespace).Get(dep.Name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
-			fmt.Fprintf(os.Stderr, "endpoint for '%s' in namespace '%s' not found\n", dep.Name, namespace)
-			time.Sleep(time.Second)
+			fmt.Printf("-- Not found\n")
+			time.Sleep(time.Second * 3)
 			continue
 		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Fprintf(os.Stderr, "k8 endpoint error %v\n", statusError.ErrStatus.Message)
+			fmt.Printf(" -- k8 endpoint error %v\n", statusError.ErrStatus.Message)
 			os.Exit(1)
 		} else if err != nil {
-			fmt.Fprintf(os.Stderr, "k8 http error %v\n", err)
+			fmt.Printf("-- k8 http error %v\n", err)
 			os.Exit(1)
 		}
 
 		if len(endpoint.Subsets) == 0 {
 			fmt.Print(" -- Not Found\n")
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 3)
 		}
 		// Find the port requested
 		for i, subset := range endpoint.Subsets {
@@ -119,7 +119,7 @@ func waitFor(client *kubernetes.Clientset, namespace string, dep *Dependency) er
 			}
 		}
 		fmt.Print(" -- Port Not Found\n")
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 3)
 	}
 	return nil
 }
