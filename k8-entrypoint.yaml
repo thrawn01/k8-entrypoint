@@ -7,9 +7,9 @@ spec:
       - name: k8-entrypoint
         image: k8-entrypoint:latest
         imagePullPolicy: IfNotPresent
-        env:
-          - name: DEPENDS_ON
-            value: "kafka:client,zookeeper:server"
+        #env:
+        #  - name: DEPENDS_ON
+        #    value: "kafka:client,zookeeper:server"
         args:
         - /usr/sbin/k8-entrypoint
         - /usr/sbin/print-env

@@ -6,6 +6,9 @@ GITHUB_REPO=k8-entrypoint
 
 UPSTREAM=$(GITHUB_ORG)/$(GITHUB_REPO)
 
+image:
+	docker build --no-cache -t k8-entrypoint:latest .
+
 build:
 	GOOS=linux GOARCH=amd64 go build -o k8-entrypoint ./cmd/k8-entrypoint
 
