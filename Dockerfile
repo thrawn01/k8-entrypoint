@@ -21,4 +21,4 @@ FROM scratch
 COPY --from=go-build /go/bin/k8-entrypoint /usr/sbin/k8-entrypoint
 COPY --from=go-build /go/bin/print-env /usr/sbin/print-env
 
-CMD ["/usr/sbin/k8-entrypoint"]
+CMD ["/usr/sbin/k8-entrypoint", "/usr/sbin/print-env"]
