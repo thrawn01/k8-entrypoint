@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"os/signal"
 	"strings"
 
 	"github.com/mailgun/k8-entrypoint"
@@ -13,7 +11,20 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	readyFileName = "/k8-entrypoint-is-ready"
+)
+
 func main() {
+
+	// Preform a ready check and exit
+	if os.Args[1] == "--ready" {
+		if isReady() {
+			os.Exit(0)
+		}
+		os.Exit(1)
+	}
+
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -51,8 +62,11 @@ func main() {
 		os.Setenv(fmt.Sprintf("%s_PORT", strings.ToUpper(dep.Name)), dep.Port)
 	}
 
-	// TODO: fetch config if needed
+	// fetch and write config if needed
 	entrypoint.GetConfig()
+
+	// Write up-check file for entrypoint --ready to look for
+	writeReadyFile()
 
 	// Run the service as a child process
 	retCode, err := entrypoint.RunService()
@@ -60,4 +74,25 @@ func main() {
 		fmt.Fprintf(os.Stderr, entrypoint.PREFIX+"non-zero exit '%d' for %+v\n", retCode, os.Args[1:])
 	}
 	os.Exit(int(retCode))
+}
+
+func writeReadyFile() {
+	fd, err := os.OpenFile(readyFileName, os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, entrypoint.PREFIX+"while opening ready-check file '%s' - %s\n", readyFileName, err)
+		os.Exit(255)
+	}
+	fd.Write([]byte("ready"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, entrypoint.PREFIX+"while writing ready-check file '%s' - %s\n", readyFileName, err)
+		os.Exit(254)
+	}
+	fd.Close()
+}
+
+func isReady() bool {
+	if _, err := os.Stat(readyFileName); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }

@@ -7,9 +7,20 @@ spec:
       - name: k8-entrypoint
         image: k8-entrypoint:latest
         imagePullPolicy: IfNotPresent
-        #env:
-        #  - name: DEPENDS_ON
-        #    value: "kafka:client,zookeeper:server"
+        readinessProbe:
+          exec:
+            command:
+            - /usr/sbin/k8-entrypoint
+            - --ready
+          initialDelaySeconds: 1
+          periodSeconds: 5
+        env:
+          - name: DEPENDS_ON
+            value: "etcd-cluster-client:client,kafka:client,zookeeper:server"
+          - name: SERVICE_NAME
+            value: "scout"
+          - name: DC_SHORT_NAME
+            value: "devgun"
         args:
         - /usr/sbin/k8-entrypoint
         - /usr/sbin/print-env
