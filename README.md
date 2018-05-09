@@ -32,7 +32,7 @@ spec:
       containers:
       - name: my-service
         image: my-service:latest
-		        readinessProbe:
+        readinessProbe:
           exec:
             command:
             - /usr/sbin/k8-entrypoint
