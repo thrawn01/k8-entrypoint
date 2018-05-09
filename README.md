@@ -9,7 +9,19 @@ service is ready to serve requests.
 A service spec places the entrypoint first `/k8-entrypoint /path/to/service
 arg1 arg2` then declares comma separated dependencies by adding an environment
 variable called `DEPENDS_ON`. Each dependency declares the name of the service
-and the name of port it is interested in.
+and the name of port it is interested in.  Additionally users can specify a
+ready check with the flag `--ready` which when called with return 0 if the
+dependencies were resolved and the service started or 1 if not.
+
+### ETCD configs
+Many of our services have configuration stored in etcd. If the environment
+vairable `SERVICE_NAME` and `DC_SHORT_NAME` is defined, `k8-entrypoint` will
+connect to etcd via the `ETCD_V3_ENDPOINTS` variable or if not provided will
+default to using the dns name `etcd-cluster-client:2379` to retrieve the etcd
+config and write the config in yaml format inside the local container at
+`/etc/mailgun/<service_name>/config.yaml` . This works exactly like
+`mailgun/deploy` currently and should work with all golang based mailgun
+containers.
 
 ```yaml
 apiVersion: v1
@@ -20,9 +32,21 @@ spec:
       containers:
       - name: my-service
         image: my-service:latest
+		        readinessProbe:
+          exec:
+            command:
+            - /usr/sbin/k8-entrypoint
+            - --ready
+          initialDelaySeconds: 1
+          periodSeconds: 5
         env:
           - name: DEPENDS_ON
-            value: "kafka:client,zookeeper:server"
+            value: "etcd-cluster-client:client,kafka:client,zookeeper:server"
+          - name: SERVICE_NAME
+            value: "scout"
+          - name: DC_SHORT_NAME
+            value: "devgun"
+
         args:
         - /bin/k8-entrypoint
         - /bin/my-service
