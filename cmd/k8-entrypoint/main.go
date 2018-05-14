@@ -17,6 +17,11 @@ const (
 
 func main() {
 
+	if len(os.Args) < 2 {
+		fmt.Printf("atleast one argument required (See http://github.com/mailgun/k8-entrypoint for usage)\n")
+		os.Exit(1)
+	}
+
 	// Preform a ready check and exit
 	if os.Args[1] == "--ready" {
 		if isReady() {
@@ -65,7 +70,12 @@ func main() {
 	// fetch and write config if needed
 	entrypoint.GetConfig()
 
-	// Write up-check file for entrypoint --ready to look for
+	// We are used in an init container, no process to run
+	if os.Args[1] == "--init" {
+		os.Exit(0)
+	}
+
+	// Write up-check file for entry-point --ready to look for
 	writeReadyFile()
 
 	// Run the service as a child process

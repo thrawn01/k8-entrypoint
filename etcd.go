@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"path"
+
 	"github.com/coreos/etcd/clientv3"
+	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/yaml.v2"
 )
 
@@ -35,27 +38,28 @@ func GetConfig() error {
 		})
 
 		if err != nil {
-			fmt.Printf(PREFIX+"while connecting to etcd v3 - '%s'; retrying...", err)
+			fmt.Printf(PREFIX+"while connecting to etcd v3 - '%s'; retrying...\n", err)
 			time.Sleep(time.Second * 3)
 			continue
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		value, err := cli.Get(ctx, fmt.Sprintf("/mailgun/configs/%s/%s", datacenter, service), nil)
+		value, err := cli.Get(ctx, fmt.Sprintf("/mailgun/configs/%s/%s", datacenter, service))
 		cancel()
 
 		if err != nil {
-			fmt.Printf(PREFIX+"while fetching keys from etcd v3 - '%s'; retrying...", err)
+			fmt.Printf(PREFIX+"while fetching keys from etcd v3 - '%s'; retrying...\n", err)
 			time.Sleep(time.Second * 3)
 			cli.Close()
 			continue
 		}
 
+		spew.Dump(value)
 		// Read in JSON config
-		config := make(map[interface{}]interface{})
+		config := make(map[string]interface{})
 		err = json.Unmarshal(value.Kvs[0].Value, &config)
 		if err != nil {
-			fmt.Printf(PREFIX+"while marshalling config - '%s'; retrying...", err)
+			fmt.Printf(PREFIX+"while marshalling config - '%s'; retrying...\n", err)
 			time.Sleep(time.Second * 3)
 			cli.Close()
 			continue
@@ -71,7 +75,13 @@ func GetConfig() error {
 		}
 
 		configFile := fmt.Sprintf("/etc/mailgun/%s/config.yaml", service)
-		fd, err := os.Open(configFile)
+
+		// Create the target directory if it doesn't exist
+		if _, err := os.Stat(path.Dir(configFile)); os.IsNotExist(err) {
+			os.MkdirAll(path.Dir(configFile), os.ModePerm)
+		}
+
+		fd, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 		if err != nil {
 			fmt.Printf(PREFIX+"while openning config file '%s' - '%s'; retrying...", configFile, err)
 			time.Sleep(time.Second * 3)
@@ -87,8 +97,8 @@ func GetConfig() error {
 			continue
 		}
 		fd.Close()
+		return nil
 	}
-	return nil
 }
 
 func getEtcdEndpoints() []string {
