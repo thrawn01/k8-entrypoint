@@ -13,16 +13,7 @@ and the name of port it is interested in.  Additionally users can specify a
 ready check with the flag `--ready` which when called with return 0 if the
 dependencies were resolved and the service started or 1 if not.
 
-### ETCD configs
-Many of our services have configuration stored in etcd. If the environment
-vairable `SERVICE_NAME` and `DC_SHORT_NAME` is defined, `k8-entrypoint` will
-connect to etcd via the `ETCD_V3_ENDPOINTS` variable or if not provided will
-default to using the dns name `etcd-cluster-client:2379` to retrieve the etcd
-config and write the config in yaml format inside the local container at
-`/etc/mailgun/<service_name>/config.yaml` . This works exactly like
-`mailgun/deploy` currently and should work with all golang based mailgun
-containers.
-
+### Config
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -53,9 +44,10 @@ spec:
         - -config
         - /etc/my-service.conf
 ```
-In addition to waiting for the dependent services to be ready, `k8-entrypoint`
-will place the names of the hosts it finds into environment variables that are
-passed to the service.
+env `DEPENDS_ON` will cause k8-entrypoint to delay starting it's service until the
+dependent services are reported as running. In addition to waiting for the
+dependent services to be ready, `k8-entrypoint` will place the names of the
+hosts it finds into environment variables that are passed to the service.
 
 For the example yaml above, once kafka and zookeeper are available the
 following environment variables will be set.

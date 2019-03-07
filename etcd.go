@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 
-	"path"
-
 	"github.com/coreos/etcd/clientv3"
-	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/yaml.v2"
 )
 
@@ -44,7 +42,8 @@ func GetConfig() error {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		value, err := cli.Get(ctx, fmt.Sprintf("/mailgun/configs/%s/%s", datacenter, service))
+		key := fmt.Sprintf("/mailgun/configs/%s/%s", datacenter, service)
+		value, err := cli.Get(ctx, key)
 		cancel()
 
 		if err != nil {
@@ -54,7 +53,13 @@ func GetConfig() error {
 			continue
 		}
 
-		spew.Dump(value)
+		if value.Count == 0 {
+			fmt.Printf(PREFIX+"'%s' not found while fetching from etcd v3; retrying...\n", key)
+			time.Sleep(time.Second * 3)
+			cli.Close()
+			continue
+		}
+
 		// Read in JSON config
 		config := make(map[string]interface{})
 		err = json.Unmarshal(value.Kvs[0].Value, &config)
